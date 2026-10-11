@@ -1,0 +1,43 @@
+# =======================================================
+# Prometheus Configuration (Đề 9 E-Commerce)
+# Scrape Targets: node-exporter, cadvisor, mysqld-exporter, web
+# =======================================================
+
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+
+scrape_configs:
+  # 1. Host Node Exporter
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          environment: 'production'
+          role: 'host-metrics'
+
+  # 2. Container cAdvisor Metrics
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          environment: 'production'
+          role: 'container-metrics'
+
+  # 3. MySQL Database Exporter
+  - job_name: 'mysqld-exporter'
+    static_configs:
+      - targets: ['mysqld-exporter:9104']
+        labels:
+          environment: 'production'
+          role: 'database-metrics'
+
+  # 4. Node.js Express Web Application
+  - job_name: 'ecommerce-web'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['web:3000']
+        labels:
+          environment: 'production'
+          role: 'application-metrics'
+          app: 'electroshop'
