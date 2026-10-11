@@ -223,8 +223,11 @@ services:
     image: prom/mysqld-exporter:v0.15.1
     container_name: ecommerce-mysqld-exporter
     restart: unless-stopped
+    command:
+      - "--mysqld.address=db:3306"
+      - "--mysqld.username=${MYSQL_EXPORTER_USER:-exporter}"
     environment:
-      DATA_SOURCE_NAME: "${MYSQL_EXPORTER_USER:-exporter}:${MYSQL_EXPORTER_PASSWORD:-ExporterPass123!}@(db:3306)/"
+      MYSQLD_EXPORTER_PASSWORD: "${MYSQL_EXPORTER_PASSWORD:-ChangeThisExporterPass123!}"
     networks:
       - backend-net
     depends_on:
