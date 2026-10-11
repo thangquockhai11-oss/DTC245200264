@@ -32,6 +32,8 @@ services:
       DB_PORT: 3306
     volumes:
       - ./web/logs:/app/logs
+    ports:
+      - "5000:3000"
     networks:
       - frontend-net
       - backend-net
