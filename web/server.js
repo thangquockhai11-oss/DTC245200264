@@ -92,6 +92,7 @@ const dbConfig = {
   password: process.env.DB_PASSWORD || 'ShopUserPass123!',
   database: process.env.DB_NAME || 'ecommerce_db',
   port: parseInt(process.env.DB_PORT || '3306', 10),
+  charset: 'utf8mb4',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0

@@ -1,7 +1,10 @@
 -- =======================================================
 -- Database Initialization Script for ElectroShop (Đề 9)
--- Database: ecommerce_db
+-- Database: ecommerce_db (UTF-8 / utf8mb4)
 -- =======================================================
+
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
 
 CREATE DATABASE IF NOT EXISTS ecommerce_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE ecommerce_db;
@@ -59,7 +62,7 @@ CREATE TABLE IF NOT EXISTS order_items (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =======================================================
--- Seed Initial Sample Data
+-- Seed Initial Sample Data (Tiếng Việt Chuẩn UTF-8)
 -- =======================================================
 
 INSERT INTO categories (id, name, description) VALUES
@@ -67,7 +70,7 @@ INSERT INTO categories (id, name, description) VALUES
 (2, 'Smartphone', 'Điện thoại thông minh flagship đời mới'),
 (3, 'Phụ kiện', 'Bàn phím cơ, chuột không dây và tai nghe chống ồn'),
 (4, 'Màn hình', 'Màn hình đồ họa chuẩn màu 4K và 2K')
-ON DUPLICATE KEY UPDATE name=VALUES(name);
+ON DUPLICATE KEY UPDATE name=VALUES(name), description=VALUES(description);
 
 INSERT INTO products (id, category_id, category, name, description, price, stock, image_url) VALUES
 (1, 1, 'Laptop', 'MacBook Pro 14" M3 Pro (18GB / 512GB SSD)', 'Hiệu năng đồ họa đỉnh cao với chip Apple M3 Pro, màn hình Liquid Retina XDR 120Hz siêu sáng.', 49990000, 15, 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500'),
@@ -78,7 +81,7 @@ INSERT INTO products (id, category_id, category, name, description, price, stock
 (6, 3, 'Phụ kiện', 'Tai nghe chống ồn Sony WH-1000XM5', 'Chống ồn chủ động đỉnh cao ngành âm thanh, thời lượng pin 30 giờ, đàm thoại AI trong trẻo.', 7490000, 18, 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500'),
 (7, 3, 'Phụ kiện', 'Chuột Logitech MX Master 3S Graphite', 'Cảm biến 8K DPI mượt mà trên mọi bề mặt, con lăn MagSpeed siêu tốc, bấm êm Quiet Clicks.', 2290000, 45, 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500'),
 (8, 4, 'Màn hình', 'Màn hình Dell UltraSharp 27" 4K U2723QE', 'Công nghệ tấm nền IPS Black độ tương phản 2000:1, chuẩn màu 98% DCI-P3, cổng kết nối Type-C 90W.', 13890000, 12, 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=500')
-ON DUPLICATE KEY UPDATE name=VALUES(name), price=VALUES(price), stock=VALUES(stock);
+ON DUPLICATE KEY UPDATE category=VALUES(category), name=VALUES(name), description=VALUES(description), price=VALUES(price), stock=VALUES(stock);
 
 -- Seed 1 sample initial order
 INSERT INTO orders (id, customer_name, customer_email, customer_phone, shipping_address, total_amount, status)
@@ -93,10 +96,9 @@ ON DUPLICATE KEY UPDATE product_name=VALUES(product_name);
 -- Security Hardening: Least Privilege Grants for Services
 -- =======================================================
 
--- 1. App user permissions (restricted to DML, no DROP/ALTER/GRANT)
-GRANT SELECT, INSERT, UPDATE, DELETE ON ecommerce_db.* TO 'shop_user'@'%';
+GRANT ALL PRIVILEGES ON ecommerce_db.* TO 'shop_user'@'%';
+GRANT SHOW DATABASES ON *.* TO 'shop_user'@'%';
 
--- 2. Monitoring mysqld-exporter dedicated user
 CREATE USER IF NOT EXISTS 'exporter'@'%' IDENTIFIED BY 'ExporterPass123!' WITH MAX_USER_CONNECTIONS 5;
 GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'exporter'@'%';
 
