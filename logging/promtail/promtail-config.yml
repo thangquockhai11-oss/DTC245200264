@@ -1,0 +1,52 @@
+# =======================================================
+# Promtail Log Shipper Configuration (Đề 9)
+# Ships logs to Grafana Loki from Nginx and Web Application
+# =======================================================
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # 1. Scrape Nginx Access and Error Logs
+  - job_name: nginx
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: nginx
+          env: production
+          __path__: /var/log/nginx/*log
+    pipeline_stages:
+      - match:
+          selector: '{job="nginx"}'
+          stages:
+            - regex:
+                expression: '^(?P<json_log>\{.*\})$'
+            - json:
+                source: json_log
+                expressions:
+                  status: status
+                  method: method
+                  request_uri: request_uri
+                  client_ip: client_ip
+            - labels:
+                status:
+                method:
+
+  # 2. Scrape Web Node.js Application Logs
+  - job_name: ecommerce-web
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: ecommerce-web
+          app: electroshop
+          env: production
+          __path__: /var/log/app/*log

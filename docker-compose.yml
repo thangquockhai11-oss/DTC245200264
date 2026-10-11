@@ -2,7 +2,7 @@ version: '3.8'
 
 # =======================================================
 # Đề 9 - Website Thương mại điện tử (E-commerce)
-# Bước 2: Tích hợp Giám sát Prometheus + Grafana + Exporters
+# Bước 3: Tích hợp Hệ thống Gom Log Tập Trung Loki + Promtail
 # =======================================================
 
 services:
@@ -173,6 +173,37 @@ services:
       db:
         condition: service_healthy
 
+  # =======================================================
+  # Centralized Logging Stack (Bước 3)
+  # =======================================================
+
+  # 10. Grafana Loki (Log Aggregation & Indexing Engine)
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: ecommerce-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./logging/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    networks:
+      - frontend-net
+
+  # 11. Promtail (Log Collector & Shipper to Loki)
+  promtail:
+    image: grafana/promtail:2.9.8
+    container_name: ecommerce-promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./logging/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - nginx_logs:/var/log/nginx:ro
+      - ./web/logs:/var/log/app:ro
+    networks:
+      - frontend-net
+    depends_on:
+      - loki
+
 networks:
   frontend-net:
     driver: bridge
@@ -187,4 +218,6 @@ volumes:
   prometheus_data:
     driver: local
   grafana_data:
+    driver: local
+  loki_data:
     driver: local
