@@ -1,5 +1,3 @@
-version: '3.8'
-
 # =====================================================================
 # Đề 9 - Website Thương mại điện tử (E-commerce) với Docker Compose
 # Hệ thống đầy đủ: Web + DB + phpMyAdmin + Nginx + Prometheus + Grafana
