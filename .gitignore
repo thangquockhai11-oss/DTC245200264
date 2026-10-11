@@ -1,0 +1,19 @@
+# Node.js
+node_modules/
+npm-debug.log
+web/logs/*.log
+!web/logs/.gitkeep
+
+# Environment & Sensitive Credentials
+.env
+
+# SSL Private Keys & Certificates (Generate via scripts/generate-ssl.ps1)
+nginx/ssl/*.key
+nginx/ssl/*.crt
+nginx/ssl/*.cnf
+!nginx/ssl/.gitkeep
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
