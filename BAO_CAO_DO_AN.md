@@ -17,7 +17,7 @@
 \
 
 ## BÁO CÁO TỔNG HỢP KẾT QUẢ ĐỒ ÁN CHUYÊN ĐỀ
-### HỌC PHẦN: ĐIỆN TOÁN ĐÁM MÂY & TRIỂN KHAI HỆ THỐNG PHẦN MỀM (DEVOPS)
+### HỌC PHẦN: TRIỂN KHAI VÀ QUẢN TRỊ HỆ THỐNG PHẦN MỀM
 
 \
 \
@@ -35,7 +35,9 @@
 | :--- | :--- |
 | **Giảng viên hướng dẫn:** | TS. / ThS. [Họ và Tên Giảng Viên] |
 | **Sinh viên thực hiện:** | [Họ và Tên Sinh Viên] |
-| **Mã số sinh viên (MSSV):**| [Mã Số Sinh Viên] |
+| **Mã số sinh viên (MSSV):**| **DTC245200264** |
+| **Tài khoản GitHub:** | **thangquockhai11-oss** |
+| **Repository GitHub:** | **https://github.com/thangquockhai11-oss/DTC245200264** |
 | **Lớp học phần:** | [Tên Lớp Học Phần] |
 | **Ngành đào tạo:** | Kỹ thuật Phần mềm / An toàn Thông tin / Mạng máy tính |
 

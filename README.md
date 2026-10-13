@@ -1,5 +1,7 @@
 # 🛒 ĐỒ ÁN ĐỀ 9: HỆ THỐNG WEBSITE THƯƠNG MẠI ĐIỆN TỬ VỚI DOCKER COMPOSE
 
+> **Học phần**: Triển khai và Quản trị Hệ thống Phần mềm &nbsp;|&nbsp; **MSSV**: DTC245200264 &nbsp;|&nbsp; **GitHub**: [thangquockhai11-oss/DTC245200264](https://github.com/thangquockhai11-oss/DTC245200264)
+
 > **Hệ thống vi dịch vụ container hóa toàn diện**: Node.js (Express) + MySQL 8.0 + phpMyAdmin + Nginx Reverse Proxy (SSL/TLS) + Prometheus + Grafana + cAdvisor + Exporters + Loki + Promtail.
 
 ---
