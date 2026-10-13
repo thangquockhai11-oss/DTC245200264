@@ -188,17 +188,19 @@ docker compose ps
 
 | Dịch Vụ | Tên Miền / URL Truy Cập | Cổng Expose Host | Cổng Nội Bộ Container | Tài Khoản / Mật Khẩu Mặc Định | Ghi Chú Bảo Mật |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **E-Commerce Web** | `https://shop.local` | 443 (qua Nginx) | 3000 | Không cần đăng nhập | Chạy HTTPS, bảo vệ bằng Security Headers |
-| **HTTP Redirect** | `http://shop.local` | 80 (qua Nginx) | 80 | - | Tự động chuyển hướng 301 sang HTTPS 443 |
-| **phpMyAdmin** | `https://pma.local` | 443 (qua Nginx) | 80 | User: `shop_user`<br/>Pass: `ShopUserPass123!` | Không mở cổng 80 ra host, đi qua Proxy |
+| **E-Commerce Web (qua Nginx SSL)** | `https://shop.local` | 443 (qua Nginx) | 3000 | Không cần đăng nhập | Chạy HTTPS, bảo vệ bằng Security Headers |
+| **E-Commerce Web (trực tiếp)** | `http://localhost:5000` | **5000** | 3000 | Không cần đăng nhập | Truy cập thẳng, không qua Nginx (debug) |
+| **HTTP → HTTPS Redirect** | `http://shop.local` | 80 (qua Nginx) | 80 | - | Tự động chuyển hướng 301 sang HTTPS 443 |
+| **phpMyAdmin (qua Nginx SSL)** | `https://pma.local` | 443 (qua Nginx) | 80 | User: `ecommerce_user`<br/>Pass: `Ecommerce@2026Strong` | Truy cập qua HTTPS Reverse Proxy |
+| **phpMyAdmin (trực tiếp)** | `http://localhost:8081` | **8081** | 80 | User: `ecommerce_user`<br/>Pass: `Ecommerce@2026Strong` | Truy cập thẳng không qua Nginx (debug) |
 | **Grafana Dashboard** | `http://localhost:3000` | 3000 | 3000 | User: `admin`<br/>Pass: `GrafanaAdminSecure2026!` | Tự động nạp sẵn Prometheus & Loki |
-| **Prometheus** | `http://127.0.0.1:9090` | 9090 (Localhost) | 9090 | Không có | Chỉ bind IP máy chủ 127.0.0.1 |
-| **MySQL Database** | *Nội bộ container* | **ĐÃ ĐÓNG** | 3306 | Root Pass: `RootSecretPassword2026!`<br/>App User: `shop_user` | Cô lập trong `backend-net`, cấm từ bên ngoài |
-| **Loki Log Engine** | *Nội bộ container* | **ĐÃ ĐÓNG** | 3100 | - | Truy vấn qua Grafana Explore LogQL |
-| **Promtail Collector**| *Nội bộ container* | **ĐÃ ĐÓNG** | 9080 | - | Thu thập log tự động |
-| **cAdvisor** | *Nội bộ container* | **ĐÃ ĐÓNG** | 8080 | - | Đẩy metrics về Prometheus |
-| **Node Exporter** | *Nội bộ container* | **ĐÃ ĐÓNG** | 9100 | - | Đẩy metrics về Prometheus |
-| **MySQLd Exporter**| *Nội bộ container* | **ĐÃ ĐÓNG** | 9104 | User: `exporter`<br/>Pass: `ExporterPass123!` | Đẩy metrics về Prometheus |
+| **Prometheus** | `http://127.0.0.1:9090` | 9090 (Localhost only) | 9090 | Không có | Chỉ bind `127.0.0.1`, không ra ngoài |
+| **MySQL Database** | *Nội bộ container* | **ĐÃ ĐÓNG** | 3306 | Root: `Root@2026Strong`<br/>App User: `ecommerce_user` | Cô lập trong `backend-net`, không expose ra host |
+| **Loki Log Engine** | *Nội bộ container* | **ĐÃ ĐÓNG** | 3100 | - | Truy vấn qua Grafana Explore → LogQL |
+| **Promtail Collector** | *Nội bộ container* | **ĐÃ ĐÓNG** | 9080 | - | Tự động thu thập log Nginx + App |
+| **cAdvisor** | *Nội bộ container* | **ĐÃ ĐÓNG** | 8080 | - | Đẩy container metrics về Prometheus |
+| **Node Exporter** | *Nội bộ container* | **ĐÃ ĐÓNG** | 9100 | - | Đẩy host system metrics về Prometheus |
+| **MySQLd Exporter** | *Nội bộ container* | **ĐÃ ĐÓNG** | 9104 | User: `exporter`<br/>Pass: `ExporterPass123!` | Đẩy DB metrics về Prometheus |
 
 ---
 
