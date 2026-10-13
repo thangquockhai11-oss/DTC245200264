@@ -94,9 +94,12 @@ ON DUPLICATE KEY UPDATE product_name=VALUES(product_name);
 
 -- =======================================================
 -- Security Hardening: Least Privilege Grants for Services
+-- Principle of Least Privilege: shop_user chỉ được quyền DML
+-- KHÔNG có quyền DDL (CREATE, DROP, ALTER) hoặc ADMIN
 -- =======================================================
 
-GRANT ALL PRIVILEGES ON ecommerce_db.* TO 'shop_user'@'%';
+-- App user: chỉ quyền đọc/ghi dữ liệu, không sửa cấu trúc
+GRANT SELECT, INSERT, UPDATE, DELETE ON ecommerce_db.* TO 'shop_user'@'%';
 GRANT SHOW DATABASES ON *.* TO 'shop_user'@'%';
 
 CREATE USER IF NOT EXISTS 'exporter'@'%' IDENTIFIED BY 'ExporterPass123!' WITH MAX_USER_CONNECTIONS 5;
