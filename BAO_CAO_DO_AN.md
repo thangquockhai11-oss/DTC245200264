@@ -76,7 +76,7 @@ Lời đầu tiên, em xin gửi lời cảm ơn chân thành và sâu sắc nh�
 | **IMG-03** | Quy trình Đặt hàng (Checkout) | Trang 7 | Modal giỏ hàng và form đặt hàng `POST /checkout` trả về thông báo "Đặt hàng thành công! Mã đơn: #...". |
 | **IMG-04** | Giao diện phpMyAdmin qua SSL | Trang 8 | Trình duyệt truy cập `https://pma.local` qua HTTPS, hiển thị cấu trúc database `ecommerce_db` và các bảng. |
 | **IMG-05** | Nginx SSL Certificate & Security Headers| Trang 8 | Cửa sổ DevTools (Network Tab) hoặc kiểm tra chi tiết chứng chỉ số SAN (`shop.local`, `pma.local`) và các headers bảo mật. |
-| **IMG-06** | Prometheus Targets Status | Trang 9 | Truy cập `http://localhost:9090/targets` hiển thị cả 4 scrape jobs (`ecommerce-web`, `cadvisor`, `mysqld-exporter`, `node-exporter`) đều ở trạng thái `UP (1/1)`. |
+| **IMG-06** | Prometheus Targets Status | Trang 9 | Truy cập `http://localhost:9090/targets` hiển thị đầy đủ các targets (`cadvisor`, `prometheus`, `backend`, `loki`, `mysql`, `nginx`, `node-exporter`) đều ở trạng thái `UP (1/1)`. |
 | **IMG-07** | Grafana cAdvisor Dashboard | Trang 9 | Grafana dashboard (ID 14282 hoặc 893) hiển thị biểu đồ CPU, RAM theo thời gian thực của các container. |
 | **IMG-08** | Grafana MySQL Overview Dashboard | Trang 10 | Grafana dashboard (ID 7362) hiển thị lượng Queries/sec, Connections và InnoDB buffer pool của MySQL. |
 | **IMG-09** | Grafana Explore: LogQL Truy Vấn Nginx | Trang 10 | Giao diện Grafana Explore chạy câu lệnh `{job="nginx"}` hiển thị luồng log truy cập trực tiếp. |
@@ -276,21 +276,27 @@ Khi truy cập `https://shop.local`, ứng dụng Web hiển thị giao diện t
 > *(Chèn ảnh minh chứng: **IMG-02** Giao diện Web E-Commerce và **IMG-03** Quy trình đặt hàng)*
 
 ### 4.2. Thực nghiệm hệ thống giám sát Prometheus
-Truy cập giao diện quản trị Prometheus tại `http://127.0.0.1:9090/targets`, hệ thống ghi nhận cả 4 targets đều hoạt động bình thường (`State: UP`):
-1. `ecommerce-web`: Endpoint `web:3000/metrics`.
-2. `cadvisor`: Endpoint `cadvisor:8080/metrics`.
-3. `mysqld-exporter`: Endpoint `mysqld-exporter:9104/metrics`.
-4. `node-exporter`: Endpoint `node-exporter:9100/metrics`.
+Truy cập giao diện quản trị Prometheus tại `http://127.0.0.1:9090/targets` (Status > Target health), hệ thống ghi nhận đầy đủ **7 targets** giám sát đều hoạt động hoàn hảo ở trạng thái `State: UP (1/1)`:
+1. `cadvisor`: Endpoint `http://cadvisor:8080/metrics` (Container Metrics: CPU, RAM, Network I/O).
+2. `prometheus`: Endpoint `http://localhost:9090/metrics` (Self-Monitoring nội bộ Prometheus).
+3. `backend`: Endpoint `http://backend:3000/metrics` (Express HTTP Requests, Latency, Đơn hàng, Doanh thu).
+4. `loki`: Endpoint `http://loki:3100/metrics` (Chỉ số hiệu năng Logging Engine, tốc độ nạp log).
+5. `mysql`: Endpoint `http://mysqld_exporter:9104/metrics` (MySQL Connections, Queries/sec, Buffer Pool).
+6. `nginx`: Endpoint `http://nginx_exporter:9113/metrics` (Nginx Active Connections, Requests/sec).
+7. `node-exporter`: Endpoint `http://node-exporter:9100/metrics` (Host Hardware Metrics: CPU, RAM, Disk).
 
-> *(Chèn ảnh minh chứng: **IMG-06** Prometheus Targets Status)*
+> *(Chèn ảnh minh chứng: **IMG-06** Prometheus Targets Status đạt 100% UP)*
 
 ### 4.3. Kết quả trực quan hóa Dashboards trên Grafana
-Grafana được cấu hình nạp sẵn Datasource `Prometheus` (default) và `Loki`. Sử dụng các Dashboard ID chính thức từ Grafana Labs:
-* **Dashboard Node Exporter Full (ID: 1860)**: Giám sát toàn diện mức tải CPU, RAM tiêu thụ, lưu lượng đọc/ghi ổ đĩa I/O máy chủ.
-* **Dashboard Docker Container & cAdvisor (ID: 14282)**: Giám sát riêng biệt mức độ tiêu hao tài nguyên của từng container `ecommerce-web`, `ecommerce-db`, `ecommerce-nginx`.
-* **Dashboard MySQL Overview (ID: 7362)**: Theo dõi thông số kết nối, tỷ lệ cache hit của InnoDB buffer pool và số lượng truy vấn đọc/ghi trên giây.
+Grafana (`http://localhost:3000`) được tích hợp cơ chế **Auto-Provisioning** tự động nạp sẵn 2 Datasources (`Prometheus` và `Loki`) cùng bộ **6 Dashboards hoàn chỉnh** trong thư mục **"ElectroShop Monitoring"**:
+* **Dashboard 01 - Tổng Quan Hệ Thống & Target Health**: Giám sát trạng thái toàn bộ targets (UP/DOWN badges), các KPI kinh doanh (Đơn hàng, Doanh thu VND, Request Rate, P95 Latency) và tài nguyên tổng thể.
+* **Dashboard 02 - Nginx Reverse Proxy & Lưu Lượng Web**: Theo dõi trạng thái Nginx, Active Connections, Reading/Writing/Waiting, Handled vs Accepted connections.
+* **Dashboard 03 - Node.js Web Application & API Metrics**: Uptime, Request Rate theo từng Route (`/api/products`, `/checkout`, `/health`), phân vị độ trễ (P50/P90/P95/P99) và Node.js runtime memory.
+* **Dashboard 04 - MySQL Database Performance**: Active connections, Queries/sec (SELECT/INSERT/UPDATE/DELETE), Slow queries, InnoDB buffer pool hit ratio.
+* **Dashboard 05 - cAdvisor Docker Containers & Resource Limits**: CPU % và RAM Working set chi tiết của từng container, Network I/O, kiểm soát giới hạn tài nguyên.
+* **Dashboard 06 - Loki Centralized Logs & LogQL Analytics**: Tốc độ nạp log, biểu đồ lưu lượng dòng log theo thời gian, Live Log Stream từ Nginx và Web App kèm bộ lọc mã lỗi HTTP 4xx/5xx.
 
-> *(Chèn ảnh minh chứng: **IMG-07** Grafana cAdvisor Dashboard và **IMG-08** Grafana MySQL Overview Dashboard)*
+> *(Chèn ảnh minh chứng: **IMG-07** Grafana cAdvisor Dashboard và **IMG-08** Grafana MySQL Overview Dashboard / Overview Dashboard)*
 
 ### 4.4. Thực nghiệm hệ thống gom log tập trung Promtail + Loki và 4 truy vấn LogQL
 Promtail đọc toàn bộ log Nginx và ứng dụng, truyền về Loki. Trong mục **Grafana Explore**, sinh viên thực hiện 4 truy vấn LogQL minh chứng:

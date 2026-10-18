@@ -1,18 +1,20 @@
 # =======================================================
 # Grafana Dashboard Provider Configuration (Đề 9)
-# Tự động nạp tất cả dashboard JSON trong thư mục này
+# Tự động nạp toàn bộ dashboard JSON từ /var/lib/grafana/dashboards
 # =======================================================
 
 apiVersion: 1
 
 providers:
-  - name: 'default'
+  - name: 'ElectroShop Monitoring'
     orgId: 1
     folder: 'ElectroShop Monitoring'
     folderUid: 'electroshop'
     type: file
     disableDeletion: false
     editable: true
-    updateIntervalSeconds: 30
+    updateIntervalSeconds: 15
+    allowUiUpdates: true
     options:
-      path: /etc/grafana/provisioning/dashboards
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

@@ -198,26 +198,63 @@ docker compose ps
 | **MySQL Database** | *(nội bộ container)* | **ĐÃ ĐÓNG** | 3306 | Root: `RootSecretPassword2026!`<br/>App: `shop_user` / `ShopUserPass123!` | Cô lập hoàn toàn trong `backend-net` |
 | **Loki Log Engine** | *(nội bộ container)* | **ĐÃ ĐÓNG** | 3100 | - | Truy vấn qua Grafana → Explore → LogQL |
 | **Promtail Collector** | *(nội bộ container)* | **ĐÃ ĐÓNG** | 9080 | - | Tự động thu thập log Nginx + App |
-| **cAdvisor** | *(nội bộ container)* | **ĐÃ ĐÓNG** | 8080 | - | Đẩy container metrics về Prometheus |
-| **Node Exporter** | *(nội bộ container)* | **ĐÃ ĐÓNG** | 9100 | - | Đẩy host system metrics về Prometheus |
-| **MySQLd Exporter** | *(nội bộ container)* | **ĐÃ ĐÓNG** | 9104 | User: `exporter`<br/>Pass: `ExporterPass123!` | Đẩy DB metrics về Prometheus |
+| **cAdvisor** | `http://localhost:8080` | 8080 | 8080 | - | Container resource metrics |
+| **Node Exporter** | `http://localhost:9100` | 9100 | 9100 | - | Host OS system metrics |
+| **MySQLd Exporter** | `http://localhost:9104` | 9104 | 9104 | User: `exporter`<br/>Pass: `ExporterPass123!` | Database performance metrics |
+| **Nginx Exporter** | `http://localhost:9113` | 9113 | 9113 | - | Nginx active connections & req/s |
 
 ---
 
 ## 7. Hệ Thống Giám Sát & Dashboard Grafana
 
-Prometheus được cấu hình tự động thu thập (scrape) 4 job theo chu kỳ 10 giây:
-1. `ecommerce-web`: Thu thập chỉ số HTTP requests, latency, số đơn hàng tạo ra (`ecommerce_orders_total`), doanh thu (`ecommerce_revenue_total`).
-2. `cadvisor`: Thu thập mức tiêu thụ CPU, RAM, Network I/O của toàn bộ 11 container.
-3. `mysqld-exporter`: Thu thập số kết nối MySQL, câu lệnh queries/sec, InnoDB buffer pool, locks.
-4. `node-exporter`: Thu thập tải CPU máy chủ, RAM, phân vùng ổ đĩa và băng thông mạng.
+Prometheus được cấu hình tự động thu thập (scrape) **7 targets** theo chu kỳ 10 giây (khớp hoàn toàn với yêu cầu bài thi và trang **Status > Target health**):
 
-### 📌 Danh Sách Mã ID Dashboard Chuẩn Trên Grafana.com Để Import:
-Đăng nhập Grafana (`http://localhost:3000`), vào **Dashboards** ➔ **New** ➔ **Import** ➔ Nhập ID:
-* **Node Exporter Full**: `1860` (Theo dõi toàn diện tài nguyên phần cứng máy chủ).
-* **Docker Container & cAdvisor**: `14282` hoặc `893` (Theo dõi CPU %, RAM, Network từng container).
-* **MySQL Overview**: `7362` hoặc `11323` (Theo dõi hiệu năng database MySQL).
-* **Node.js Application Dashboard**: `11159` (Theo dõi Event Loop, GC, Heap Memory của Express app).
+| Target Job | Endpoint Giám Sát | Trạng Thái | Vai Trò & Dữ Liệu Thu Thập |
+| :--- | :--- | :---: | :--- |
+| **`cadvisor`** | `http://cadvisor:8080/metrics` | **1/1 UP** | CPU, RAM, Network I/O, Filesystem của tất cả containers |
+| **`prometheus`** | `http://localhost:9090/metrics` | **1/1 UP** | Giám sát nội bộ Prometheus (TSDB, scrape duration, bộ nhớ) |
+| **`backend`** | `http://backend:3000/metrics` | **1/1 UP** | HTTP Requests, Latency (P50/P95/P99), Doanh thu & Đơn hàng |
+| **`loki`** | `http://loki:3100/metrics` | **1/1 UP** | Tốc độ nạp log (bytes/s, lines/s), dung lượng chunk & index |
+| **`mysql`** | `http://mysqld_exporter:9104/metrics` | **1/1 UP** | Active connections, queries/sec (SELECT/INSERT), Buffer Pool |
+| **`nginx`** | `http://nginx_exporter:9113/metrics` | **1/1 UP** | Active connections, reading/writing/waiting, request throughput |
+| **`node-exporter`** | `http://node-exporter:9100/metrics` | **1/1 UP** | Tài nguyên phần cứng máy chủ chủ quản (CPU, RAM, Disk) |
+
+### 📊 Hệ Thống 6 Dashboard Grafana Đã Được Tự Động Nạp (Auto-Provisioned)
+Khi mở Grafana (`http://localhost:3000`), toàn bộ 6 Dashboard chuyên nghiệp đã nằm sẵn trong thư mục **"ElectroShop Monitoring"**:
+
+1. **`01. ElectroShop - Tổng Quan Hệ Thống & Target Health (Đề 9)`**:
+   - Bảng trạng thái sức khỏe từng Target (UP/DOWN giống hệt Prometheus).
+   - Chỉ số kinh doanh: Tổng đơn hàng, Doanh thu (VND), Tốc độ HTTP Req/s, P95 Latency.
+   - Tổng quan nhanh Nginx, MySQL, CPU và RAM container.
+2. **`02. Nginx Reverse Proxy & Lưu Lượng Web (Đề 9)`**:
+   - Trạng thái Nginx Up/Down, Active Connections, Reading/Writing/Waiting.
+   - Biểu đồ tốc độ xử lý request (req/s), Handled vs Accepted connections.
+3. **`03. Node.js Web Application & API Metrics (Đề 9)`**:
+   - Uptime, HTTP Request rate theo từng route (`/api/products`, `/checkout`, `/health`).
+   - Phân vị độ trễ (P50, P90, P95, P99), Tỷ lệ lỗi status codes.
+   - Node.js Heap Memory (Used vs Total), Event Loop Lag, Active Handles.
+4. **`04. MySQL Database Performance (Đề 9)`**:
+   - Active Connections vs Max Connections, Threads Running, Uptime.
+   - Throughput các lệnh SQL (SELECT, INSERT, UPDATE, DELETE) trên giây.
+   - Slow Queries, InnoDB Buffer Pool pages (Data vs Free), Băng thông Network I/O.
+5. **`05. cAdvisor Docker Containers & Resource Limits (Đề 9)`**:
+   - Số container hoạt động, Tổng CPU và RAM hệ thống.
+   - Mức tiêu thụ CPU % và RAM Working Set chi tiết của từng container riêng biệt.
+   - Lưu lượng mạng Rx/Tx của từng container.
+6. **`06. Loki Centralized Logs & LogQL Analytics (Đề 9)`**:
+   - Tốc độ nạp log (Bytes/s, Lines/s), Tổng số log lines.
+   - Bảng Live Stream Log thời gian thực từ Nginx và Node.js Express.
+   - Lọc và đếm log lỗi HTTP 4xx, 5xx và exception ứng dụng.
+
+### 🛠️ Các Script Tiện Ích Hỗ Trợ Đánh Giá:
+- **Kiểm tra nhanh Target Health**:
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File .\scripts\check-targets.ps1
+  ```
+- **Tạo lưu lượng giả lập (để đồ thị Grafana nhảy số sinh động)**:
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File .\scripts\simulate-traffic.ps1
+  ```
 
 ---
 

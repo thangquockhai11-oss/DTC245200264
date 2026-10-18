@@ -1,14 +1,14 @@
 # =====================================================================
 # Đề 9 - Website Thương mại điện tử (E-commerce) với Docker Compose
 # Hệ thống đầy đủ: Web + DB + phpMyAdmin + Nginx + Prometheus + Grafana
-# + cAdvisor + Node Exporter + MySQLd Exporter + Loki + Promtail
+# + cAdvisor + Node Exporter + MySQLd Exporter + Nginx Exporter + Loki + Promtail
 #
 # CÁC BIỆN PHÁP BẢO MẬT & HARDENING:
 # 1. Non-root user: Web container chạy dưới user 'node' (UID 1000)
 # 2. Resource Limits: Giới hạn CPU và RAM (deploy.resources.limits)
 # 3. Network Isolation: Tách riêng frontend-net và backend-net (DB cô lập)
-# 4. Port Hardening: Chỉ Nginx (80, 443) và Grafana (3000) mở ra host
-#    MySQL (3306), phpMyAdmin, Loki (3100) được đóng hoàn toàn
+# 4. Port Hardening: Chỉ Nginx (80, 443), Grafana (3000), Prometheus (9090) mở ra host
+#    MySQL (3306) đóng hoàn toàn trong backend-net
 # 5. .env Isolation: Tách biệt mật khẩu và cấu hình nhạy cảm
 # 6. Database Hardening: App chỉ sử dụng user 'shop_user' với quyền DML tối thiểu
 # 7. Nginx Security Headers & SSL: Chống XSS, Clickjacking, Sniffing
@@ -35,8 +35,14 @@ services:
     ports:
       - "5000:3000"
     networks:
-      - frontend-net
-      - backend-net
+      frontend-net:
+        aliases:
+          - web
+          - backend
+      backend-net:
+        aliases:
+          - web
+          - backend
     depends_on:
       db:
         condition: service_healthy
@@ -79,7 +85,7 @@ services:
           cpus: '0.20'
           memory: 128M
 
-  # 3. phpMyAdmin Database Management UI (Truy cập duy nhất qua Nginx pma.local)
+  # 3. phpMyAdmin Database Management UI (Truy cập qua Nginx pma.local hoặc port 8081)
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:5.2.1
     container_name: ecommerce-pma
@@ -102,7 +108,7 @@ services:
           cpus: '0.25'
           memory: 128M
 
-  # 4. Nginx Reverse Proxy (SSL / TLS 1.3 Termination, Cổng duy nhất 80/443 mở ra ngoài)
+  # 4. Nginx Reverse Proxy (SSL / TLS 1.3 Termination, Cổng 80/443 mở ra ngoài)
   nginx:
     image: nginx:1.25-alpine
     container_name: ecommerce-nginx
@@ -115,7 +121,9 @@ services:
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - nginx_logs:/var/log/nginx
     networks:
-      - frontend-net
+      frontend-net:
+        aliases:
+          - nginx
     depends_on:
       - web
       - phpmyadmin
@@ -136,13 +144,14 @@ services:
     restart: unless-stopped
     user: "nobody"
     ports:
-      - "127.0.0.1:9090:9090" # Chỉ bind localhost host để bảo mật nội bộ
+      - "9090:9090"
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=15d'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
@@ -168,7 +177,7 @@ services:
       GF_USERS_ALLOW_SIGN_UP: ${GF_USERS_ALLOW_SIGN_UP:-false}
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana_data:/var/lib/grafana
     networks:
       - frontend-net
@@ -180,7 +189,7 @@ services:
           cpus: '0.50'
           memory: 256M
 
-  # 7. cAdvisor (Container Resource Metrics - CPU/RAM/Network)
+  # 7. cAdvisor (Container Resource Metrics - CPU/RAM/Network/Filesystem)
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: ecommerce-cadvisor
@@ -192,8 +201,12 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
+    ports:
+      - "8080:8080"
     networks:
-      - frontend-net
+      frontend-net:
+        aliases:
+          - cadvisor
     deploy:
       resources:
         limits:
@@ -213,8 +226,12 @@ services:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
       - '--path.rootfs=/rootfs'
+    ports:
+      - "9100:9100"
     networks:
-      - frontend-net
+      frontend-net:
+        aliases:
+          - node-exporter
     deploy:
       resources:
         limits:
@@ -230,12 +247,39 @@ services:
       - "--mysqld.address=db:3306"
       - "--mysqld.username=${MYSQL_EXPORTER_USER:-exporter}"
     environment:
-      MYSQLD_EXPORTER_PASSWORD: "${MYSQL_EXPORTER_PASSWORD:-ChangeThisExporterPass123!}"
+      MYSQLD_EXPORTER_PASSWORD: "${MYSQL_EXPORTER_PASSWORD:-ExporterPass123!}"
+    ports:
+      - "9104:9104"
     networks:
-      - backend-net
+      backend-net:
+        aliases:
+          - mysqld-exporter
+          - mysqld_exporter
     depends_on:
       db:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.20'
+          memory: 64M
+
+  # 10. Nginx Prometheus Exporter (Reverse Proxy & Web Server Metrics)
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.1.0
+    container_name: ecommerce-nginx-exporter
+    restart: unless-stopped
+    command:
+      - -nginx.scrape-uri=http://nginx:8080/stub_status
+    ports:
+      - "9113:9113"
+    networks:
+      frontend-net:
+        aliases:
+          - nginx-exporter
+          - nginx_exporter
+    depends_on:
+      - nginx
     deploy:
       resources:
         limits:
@@ -246,25 +290,29 @@ services:
   # Centralized Logging Stack (Loki + Promtail)
   # =======================================================
 
-  # 10. Grafana Loki (Log Aggregation & Storage Engine - Non-root)
+  # 11. Grafana Loki (Log Aggregation & Storage Engine - Non-root)
   loki:
     image: grafana/loki:2.9.8
     container_name: ecommerce-loki
     restart: unless-stopped
     user: "10001:10001"
     command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
     volumes:
       - ./logging/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
       - loki_data:/loki
     networks:
-      - frontend-net
+      frontend-net:
+        aliases:
+          - loki
     deploy:
       resources:
         limits:
           cpus: '0.50'
           memory: 256M
 
-  # 11. Promtail (Log Collector & Forwarder)
+  # 12. Promtail (Log Collector & Forwarder)
   promtail:
     image: grafana/promtail:2.9.8
     container_name: ecommerce-promtail
