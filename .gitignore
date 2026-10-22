@@ -17,3 +17,10 @@ nginx/ssl/*.cnf
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Office & Report Documents
+*.docx
+*.doc
+*.rar
+BAO_CAO_DO_AN.md
+build_new_docx.py
